@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camel="http://camel.apache.org/schema/spring"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+	<camelContext xmlns="http://camel.apache.org/schema/spring"
+		autoStartup="true" id="camelContext">
+		<restConfiguration bindingMode="auto" component="restlet" port="7890" />
+		<rest path="/rest">
+			<get uri="/confirm/{processKey}">
+				<to uri="direct:confirm" />
+			</get>
+		</rest>
+
+		<!-- camel -> activiti -->
+		<route id="csvToProcess">
+			<from uri="file://purchaseProcess/csv/?delay=5000" />
+			<log loggingLevel="INFO" logName="jp.cameluser.camel" message="get csv file! : ${header.CamelFileName}" />
+			<transacted />
+			<split parallelProcessing="false" stopOnException="true" streaming="false">
+				<tokenize token="\n" />
+				<unmarshal ref="bindyDataFormat" />
+				<log loggingLevel="DEBUG" logName="jp.cameluser.camel" message="separate record: ${body}" />
+				<process ref="entryPurchase" />
+				<to uri="activiti:purchaseProcess" />
+			</split>
+		</route>
+
+		<!-- activiti -> camel -->
+		<route id="cancel">
+			<from uri="activiti:purchaseProcess:cancel" />
+			<transacted/>
+			<to uri="mybatis:updatePurchase?executorType=batch&amp;statementType=Update" />
+			<log loggingLevel="INFO" logName="jp.cameluser.camel" message="purchase cancel: ${body}" />
+		</route>
+
+		<!-- activiti -> camel -->
+		<route id="apply">
+			<from uri="activiti:purchaseProcess:apply" />
+			<transacted/>
+			<to uri="mybatis:updatePurchase?executorType=batch&amp;statementType=Update" />
+			<log loggingLevel="INFO" logName="jp.cameluser.camel" message="purchase apply: ${body}" />
+		</route>
+
+		<!-- camel -> activiti -->
+		<route id="confirm">
+			<from uri="direct:confirm" />
+			<transacted/>
+			<setProperty propertyName="PROCESS_KEY_PROPERTY">
+				<simple>${header.processKey}</simple>
+			</setProperty>
+			<process ref="confirmPurchase"/>
+			<to uri="activiti:purchaseProcess:confirm" />
+			<log loggingLevel="INFO" logName="jp.cameluser.camel" message="purchase confirm: ${header.processKey}" />
+			<!-- countermeasure for crossdomain -->
+			<setHeader headerName="Access-Control-Allow-Origin">
+				<constant>*</constant>
+			</setHeader>
+			<setBody>
+				<simple>communicate ok: ${header.processKey}</simple>
+			</setBody>
+		</route>
+	</camelContext>
+
+	<!-- camel-activiti provider -->
+	<bean id="camel" class="org.activiti.camel.impl.CamelBehaviorCamelBodyImpl" />
+
+	<!-- user logic in camel -->
+	<bean id="entryPurchase" class="jp.cameluser.camel.logic.EntryPurchase" />
+	<bean id="confirmPurchase" class="jp.cameluser.camel.logic.ConfirmPurchase" />
+
+	<!-- camel-bindy -->
+	<bean id="bindyDataFormat" class="org.apache.camel.dataformat.bindy.csv.BindyCsvDataFormat">
+		<constructor-arg value="jp.cameluser.camel.model" />
+	</bean>
+
+	<!-- MyBatis -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation" value="classpath:SqlMapConfig.xml" />
+	</bean>
+	<bean id="mybatis" class="org.apache.camel.component.mybatis.MyBatisComponent">
+		<property name="sqlSessionFactory" ref="sqlSessionFactory" />
+	</bean>
+	<bean id="mapperScannerConfigurerx" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="jp.cameluser.camel.service" />
+	</bean>
+
+	<!-- jmx -->
+	<bean id="managementName"
+		class="org.apache.camel.management.DefaultManagementNamingStrategy">
+		<property name="hostName" value="localhost" />
+		<property name="domainName" value="org.apache.camel" />
+	</bean>
+
+	<!-- Properties -->
+	<!--
+	<bean id="bridgePropertyPlaceholder"
+		class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+		<property name="location" value="classpath:db.properties" />
+	</bean>
+	<bean class="jp.cameluser.camel.logic.PropertiesAccessor" id="propertiesAccessor" />
+	 -->
+</beans>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+  <!-- 出力先の設定 -->
+
+  <!-- 標準出力 -->
+  <appender name="stdout" class="org.apache.log4j.ConsoleAppender">
+
+    <!-- ログレベル -->
+    <param name="threshold" value="DEBUG" />
+    <!-- 出力先 -->
+    <param name="Target" value="System.out" />
+
+    <!-- メッセージフォーマット -->
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d{yyyy/MM/dd HH:mm:sss.SSS}] [%-p] [%t] %m%n" />
+    </layout>
+
+  </appender>
+
+  <!-- ファイル出力 -->
+  <!-- ファイルサイズでローテーションする -->
+  <appender name="file" class="org.apache.log4j.RollingFileAppender">
+
+    <!-- ログレベル -->
+    <param name="threshold" value="DEBUG" />
+    <!-- ログファイル名 -->
+    <param name="File" value="../logs/app.log" />
+    <!-- 追記 -->
+    <param name="Append" value="true" />
+    <!-- エンコーディング -->
+    <param name="Encoding" value="UTF-8" />
+    <!-- ローテーションするファイルサイズ -->
+    <param name="MaxFileSize" value="10MB" />
+    <!-- 世代数 -->
+    <param name="MaxBackupIndex" value="5" />
+
+    <!-- メッセージフォーマット -->
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d{yyyy/MM/dd HH:mm:sss.SSS}] [%-p] [%t] %m%n" />
+    </layout>
+
+  </appender>
+
+  <!-- 出力パッケージの設定 -->
+
+  <!-- user-activiti -->
+  <logger name="jp.cameluser.activiti" additivity="false">
+    <level value="INFO" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+  </logger>
+
+  <!-- user-camel -->
+  <logger name="jp.cameluser.camel" additivity="false">
+    <level value="INFO" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+  </logger>
+
+  <!-- user-camel -->
+  <logger name="org.activiti" additivity="false">
+    <level value="INFO" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+  </logger>
+
+
+  <!-- Apache Camel -->
+  <!--
+    <logger name="org.apache.camel" additivity="false">
+    <level value="WARN" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+    </logger>
+  -->
+
+  <!-- Spring -->
+  <!--
+    <logger name="org.springframework" additivity="false">
+    <level value="WARN" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+    </logger>
+  -->
+
+  <!-- MyBatis -->
+  <!--
+    <logger name="org.apache.ibatis" additivity="false">
+    <level value="WARN" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+    </logger>
+  -->
+
+  <!-- JDBC -->
+  <!--
+    <logger name="java.sql" additivity="false">
+    <level value="WARN" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+    </logger>
+  -->
+
+  <!-- JDBC -->
+  <!--
+    <logger name="javax.sql" additivity="false">
+    <level value="WARN" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+    </logger>
+  -->
+
+  <!-- 上記以外は警告以上を出力 -->
+  <root>
+    <level value="WARN" />
+    <appender-ref ref="stdout" />
+    <appender-ref ref="file" />
+  </root>
+
+</log4j:configuration>

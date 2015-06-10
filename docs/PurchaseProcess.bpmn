@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <message id="sampleMessageEvent" name="sampleMessageEvent"></message>
+  <process id="purchaseProcess" name="purchase goods process" isExecutable="true">
+    <startEvent id="purchaseFlowStart" name="Start"></startEvent>
+    <userTask id="chiefDecision" name="Chief Decision" activiti:assignee="t.nemoto">
+      <extensionElements>
+        <activiti:formProperty id="id" name="id" type="long" expression="${camelBody.id}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="price" name="price" type="long" expression="${camelBody.price}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="name" name="name" type="string" expression="${camelBody.name}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="buyingDate" name="buyingDate" type="date" expression="${camelBody.buyingDate}" datePattern="yyyy/MM/dd" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="status" name="status" type="string" expression="${camelBody.status}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="chiefDecision" name="Do you approve this purchase?" type="enum" required="true">
+          <activiti:value id="true" name="Approve"></activiti:value>
+          <activiti:value id="false" name="Reject"></activiti:value>
+        </activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow6" sourceRef="purchaseFlowStart" targetRef="chiefDecision"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow7" sourceRef="chiefDecision" targetRef="exclusivegateway1"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway2" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="chiefDecisionOK" name="OK" sourceRef="exclusivegateway1" targetRef="exclusivegateway2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${chiefDecision == true}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="chiefDecisionNG" name="NG" sourceRef="exclusivegateway1" targetRef="cancel">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${chiefDecision == false}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="managerDecision" name="Manager Decision" activiti:assignee="a.kobayashi">
+      <extensionElements>
+        <activiti:formProperty id="id" name="id" type="long" expression="${camelBody.id}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="price" name="price" type="long" expression="${camelBody.price}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="name" name="name" type="string" expression="${camelBody.name}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="buyingDate" name="buyingDate" type="date" expression="${camelBody.buyingDate}" datePattern="yyyy/MM/dd" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="status" name="status" type="string" expression="${camelBody.status}" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="managerDecision" name="Do you approve this purchase?" type="enum" required="true">
+          <activiti:value id="true" name="Approve"></activiti:value>
+          <activiti:value id="false" name="Reject"></activiti:value>
+        </activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="over" name="over 200,000 yen" sourceRef="exclusivegateway2" targetRef="managerDecision">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${camelBody.price >= 200000}]]></conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow11" sourceRef="managerDecision" targetRef="exclusivegateway3"></sequenceFlow>
+    <sequenceFlow id="managerDecisionNG" name="NG" sourceRef="exclusivegateway3" targetRef="cancel">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${managerDecision == false}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="apply" name="Apply" activiti:delegateExpression="${camel}">
+      <extensionElements>
+        <activiti:executionListener event="start" class="jp.cameluser.activiti.listener.SetApply"></activiti:executionListener>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="managerDecisionOK" name="OK" sourceRef="exclusivegateway3" targetRef="apply">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${managerDecision == true}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="cancel" name="Cancel" activiti:delegateExpression="${camel}">
+      <extensionElements>
+        <activiti:executionListener event="start" class="jp.cameluser.activiti.listener.SetCancel"></activiti:executionListener>
+      </extensionElements>
+    </serviceTask>
+    <receiveTask id="confirm" name="Confirm"></receiveTask>
+    <sequenceFlow id="flow14" sourceRef="apply" targetRef="confirm"></sequenceFlow>
+    <endEvent id="purchaseFlowEnd" name="End"></endEvent>
+    <sequenceFlow id="flow15" sourceRef="confirm" targetRef="purchaseFlowEnd"></sequenceFlow>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <sequenceFlow id="flow16" sourceRef="cancel" targetRef="endevent1"></sequenceFlow>
+    <sequenceFlow id="under" name="under 200,000 yen" sourceRef="exclusivegateway2" targetRef="apply">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${camelBody.price < 200000}]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_purchaseProcess">
+    <bpmndi:BPMNPlane bpmnElement="purchaseProcess" id="BPMNPlane_purchaseProcess">
+      <bpmndi:BPMNShape bpmnElement="purchaseFlowStart" id="BPMNShape_purchaseFlowStart">
+        <omgdc:Bounds height="35.0" width="35.0" x="40.0" y="90.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="chiefDecision" id="BPMNShape_chiefDecision">
+        <omgdc:Bounds height="55.0" width="105.0" x="120.0" y="80.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="270.0" y="88.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+        <omgdc:Bounds height="40.0" width="40.0" x="355.0" y="89.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="managerDecision" id="BPMNShape_managerDecision">
+        <omgdc:Bounds height="55.0" width="105.0" x="512.0" y="80.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40.0" width="40.0" x="655.0" y="89.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="apply" id="BPMNShape_apply">
+        <omgdc:Bounds height="55.0" width="105.0" x="753.0" y="80.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="cancel" id="BPMNShape_cancel">
+        <omgdc:Bounds height="55.0" width="105.0" x="238.0" y="160.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="confirm" id="BPMNShape_confirm">
+        <omgdc:Bounds height="55.0" width="105.0" x="753.0" y="160.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="purchaseFlowEnd" id="BPMNShape_purchaseFlowEnd">
+        <omgdc:Bounds height="35.0" width="35.0" x="788.0" y="250.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="273.0" y="250.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="75.0" y="107.0"></omgdi:waypoint>
+        <omgdi:waypoint x="120.0" y="107.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="225.0" y="107.0"></omgdi:waypoint>
+        <omgdi:waypoint x="270.0" y="108.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="chiefDecisionOK" id="BPMNEdge_chiefDecisionOK">
+        <omgdi:waypoint x="310.0" y="108.0"></omgdi:waypoint>
+        <omgdi:waypoint x="355.0" y="109.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="15.0" x="320.0" y="108.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="chiefDecisionNG" id="BPMNEdge_chiefDecisionNG">
+        <omgdi:waypoint x="290.0" y="128.0"></omgdi:waypoint>
+        <omgdi:waypoint x="290.0" y="160.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="15.0" x="300.0" y="128.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="over" id="BPMNEdge_over">
+        <omgdi:waypoint x="395.0" y="109.0"></omgdi:waypoint>
+        <omgdi:waypoint x="512.0" y="107.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="85.0" x="398.0" y="109.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="617.0" y="107.0"></omgdi:waypoint>
+        <omgdi:waypoint x="655.0" y="109.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="managerDecisionNG" id="BPMNEdge_managerDecisionNG">
+        <omgdi:waypoint x="675.0" y="129.0"></omgdi:waypoint>
+        <omgdi:waypoint x="674.0" y="187.0"></omgdi:waypoint>
+        <omgdi:waypoint x="343.0" y="187.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="15.0" x="685.0" y="129.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="managerDecisionOK" id="BPMNEdge_managerDecisionOK">
+        <omgdi:waypoint x="695.0" y="109.0"></omgdi:waypoint>
+        <omgdi:waypoint x="753.0" y="107.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="15.0" x="705.0" y="109.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow14" id="BPMNEdge_flow14">
+        <omgdi:waypoint x="805.0" y="135.0"></omgdi:waypoint>
+        <omgdi:waypoint x="805.0" y="160.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow15" id="BPMNEdge_flow15">
+        <omgdi:waypoint x="805.0" y="215.0"></omgdi:waypoint>
+        <omgdi:waypoint x="805.0" y="250.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow16" id="BPMNEdge_flow16">
+        <omgdi:waypoint x="290.0" y="215.0"></omgdi:waypoint>
+        <omgdi:waypoint x="290.0" y="250.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="under" id="BPMNEdge_under">
+        <omgdi:waypoint x="375.0" y="89.0"></omgdi:waypoint>
+        <omgdi:waypoint x="375.0" y="39.0"></omgdi:waypoint>
+        <omgdi:waypoint x="804.0" y="39.0"></omgdi:waypoint>
+        <omgdi:waypoint x="805.0" y="80.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="91.0" x="399.0" y="61.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

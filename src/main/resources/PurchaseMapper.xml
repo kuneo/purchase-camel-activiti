@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="jp.cameluser.camel.service.PurchaseMapper">
+
+	<select id="selectPurchaseAll" resultType="jp.cameluser.camel.model.PurchaseModel">
+		SELECT * FROM
+		purchaseInfo ORDER BY id
+	</select>
+	<insert id="insertPurchase" parameterType="jp.cameluser.camel.model.PurchaseModel">
+		INSERT INTO purchaseInfo (name, price, buyingDate, status)
+		VALUES(#{name}, #{price}, #{buyingDate}, #{status})
+		<selectKey resultType="int" keyProperty="id">
+			SELECT SYSTEM_SEQUENCE_540D9C85_0032_45EA_AF8B_BBFF24F55481.currval FROM DUAL
+		</selectKey>
+	</insert>
+	<update id="updatePurchase" parameterType="jp.cameluser.camel.model.PurchaseModel">
+		UPDATE purchaseInfo
+		SET status = #{status} WHERE id = #{id}
+	</update>
+</mapper>
